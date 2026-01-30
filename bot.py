@@ -2,7 +2,7 @@ import os
 import time
 import requests
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, time as dt_time
 
 # ===== ENV VARIABLES =====
 ALPACA_KEY = os.getenv("ALPACA_KEY")
@@ -19,6 +19,13 @@ SL_RATIO = 1
 BASE_URL = "https://data.alpaca.markets/v2/stocks"
 
 # ===== FUNCTIONS =====
+
+def is_market_open():
+    """Checks if the current time is between 9:30 AM and 4:00 PM."""
+    now = datetime.now().time()
+    start_time = dt_time(9, 30)
+    end_time = dt_time(16, 0)
+    return start_time <= now <= end_time
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
@@ -78,10 +85,13 @@ def check_signal(symbol):
 send_telegram("✅ Stock signal bot started")
 
 while True:
-    for sym in SYMBOLS:
-        try:
-            check_signal(sym)
-        except Exception as e:
-            print(f"Error on {sym}: {e}")
+    if is_market_open():
+        for sym in SYMBOLS:
+            try:
+                check_signal(sym)
+            except Exception as e:
+                print(f"Error on {sym}: {e}")
+    else:
+        print(f"Market closed. Current time: {datetime.now().strftime('%H:%M:%S')}")
 
     time.sleep(300)
